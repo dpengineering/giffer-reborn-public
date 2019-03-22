@@ -1,0 +1,384 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Giffer Reborn</title>
+  <link rel="stylesheet" href="css/bootstrap.min.css">
+  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/styles/androidstudio.css">
+</head>
+<body>
+<nav class="navbar sticky-top navbar-light bg-light">
+  <p class="navbar-brand">Giffer Reborn</p>
+  <form class="form-inline my-2 my-lg-0">
+    <button class="btn btn-outline-info my-2 my-sm-0" id="copy-page" type="button">Copy Page</button>
+    <button class="btn btn-danger my-2 my-sm-0" id='finish-debug' type="button" onclick="debug.stopDebuggingSession()">Finish</button>
+    <button class="btn btn-success my-2 my-sm-0" id="run-button" type="button" onclick="runCode()">Run</button>
+  </form>
+</nav>
+<div class="container-fluid" id="main-div">
+  <div class="row full-height">
+    <div class="col-7 full-height">
+      <div id="editor" class="full-height"></div>
+    </div>
+    <div class="col-5 scrollable full-height">
+      <div class="card">
+        <div class="card-body">
+          <div class="container-fluid">
+            <div class="row">
+              <div class="col-12">
+                <ul class="nav nav-tabs" id="control-tabs">
+                  <li class="nav-item">
+                    <a class="nav-link active" id="controls-tab" data-toggle="tab" href="#controls" aria-controls="controls" aria-selected="true">Controls</a>
+                  </li>
+                  <li class="nav-item">
+                    <a class="nav-link" id="edit-tab" data-toggle="tab" href="#edit" aria-controls="edit" aria-selected="false">
+                       <span class="d-inline-block" id="edit-tooltip" tabindex="0" data-toggle="tooltip" title="Board cannot be changed while an exercise is selected">
+                         Configure Board
+                       </span>
+                    </a>
+                  </li>
+                  <li class="nav-item">
+                    <a class="nav-link" id="debug-tab" data-toggle="tab" href="#debug" aria-controls="edit" aria-selected="false">Debugging</a>
+                  </li>
+                  <li class="nav-item">
+                    <a class="nav-link" id="dev-tab" data-toggle="tab" href="#dev" aria-controls="dev" aria-selected="false">Tools</a>
+                  </li>
+                </ul>
+                <div class="tab-content">
+                  <div class="tab-pane fade show active" id="controls" role="tabpanel" aria-labelledby="controls-tab">
+                    <div class="input-group mb-3">
+                      <div class="input-group-prepend">
+                        <span class="input-group-text" id="name-addon">Name:</span>
+                      </div>
+                      <input type="text" id="name"  class="form-control" aria-describedby="name-addon">
+                    </div>
+                    <br>
+                    <div class="input-group mb-3">
+                      <select id="board" class="custom-select">
+                        <!--Populated by Board.js-->
+                      </select>
+                      <div class="input-group-append">
+                        <button class="btn btn-outline-secondary" type="button" onclick="loadBoard()">Load Board</button>
+                      </div>
+                    </div>
+                    <div class="input-group mb-3">
+                      <input type="text" id="exercise-number" class="form-control" placeholder="Exercise Number (leave blank for no grading)">
+                      <div class="input-group-append">
+                        <button class="btn btn-outline-secondary" type="button" onclick="loadExercise(true)">Load Exercise</button>
+                      </div>
+                      <div class="input-group-append">
+                        <button class="btn btn-outline-secondary" type="button" onclick="wipeExercise()">Clear Exercise</button>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="tab-pane fade" id="edit" role="tabpanel" aria-labelledby="edit-tab">
+                    <!--Populated/deleted by current board-->
+                  </div>
+                  <div class="tab-pane fade" id="debug" role="tabpanel" aria-labelledby="edit-tab">
+                    <div class="custom-control custom-checkbox">
+                      <input class="custom-control-input" type="checkbox" id="debugging-enabled" onchange="debug.sendUpdateEnabled()" checked>
+                      <label class="custom-control-label" for="debugging-enabled">Enable breakpoints</label>
+                    </div>
+                    <br>
+                    <div id="debugging-buttons">
+                      <button class="btn btn-info" onclick="debug.doContinue()">Run to Next</button>
+                      <button class="btn btn-secondary" onclick="debug.doStepLine()">Step Line</button>
+                      <button class="btn btn-secondary" onclick="debug.doStepExpression()">Step Expression</button>
+                    </div>
+                    <br>
+                    <br>
+                    <div id="variables-table">
+                      <table class="table">
+                        <thead>
+                        <tr>
+                          <th scope="col">Type</th>
+                          <th scope="col">Variable</th>
+                          <th scope="col">Value</th>
+                        </tr>
+                        </thead>
+                        <tbody id="variables-table-body">
+
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                  <div class="tab-pane fade" id="dev" role="tabpanel" aria-labelledby="dev-tab">
+                   <button class="btn btn-outline-secondary" onclick="saveExercise()">Export Exercise</button>
+                    <button class="btn btn-outline-secondary" onclick="saveFrameManager()">Export FrameManager</button>
+                    <button class="btn btn-outline-secondary" onclick="generateExerciseModal()">Generate Exercise</button>
+                    <hr>
+                    <button class="btn btn-info" onclick="showReadme()">Show Help</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <hr>
+            <div class="row">
+              <div class="col-12">
+                <ul class="nav nav-tabs" id="output-tabs">
+                  <li class="nav-item">
+                    <a class="nav-link" id="directions-tab" data-toggle="tab" href="#directions" aria-controls="directions" aria-selected="false">Exercise Directions</a>
+                  </li>
+                  <li class="nav-item">
+                    <a class="nav-link active" id="gif-tab" data-toggle="tab" href="#gif" aria-controls="gif" aria-selected="true">Output Gif</a>
+                  </li>
+                  <li class="nav-item">
+                    <a class="nav-link" id="output-tab" data-toggle="tab" href="#output" aria-controls="output" aria-selected="false">Output Console</a>
+                  </li>
+                </ul>
+                <div class="tab-content">
+                  <div class="tab-pane fade" id="directions" role="tabpanel" aria-labelledby="directions-tab">
+                    <p id="directions-content"></p>
+                  </div>
+                  <div class="tab-pane fade show active" id="gif" role="tabpanel" aria-labelledby="gif-tab">
+                    <div class="card-title" id="gif-loading-status">Gif</div>
+                    <div id="gif-loading-bar" style="display: none" class="progress-bar progress-bar-striped progress-bar-animated bg-info" role="progressbar" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100"></div>
+                    <div id="gif-output">
+                      <hr>
+                      <canvas id="canvas" width="100" height="100"></canvas>
+                      <br>
+                      <div id="correct-section" style="display: none;">
+                        <hr>
+                        <h4>Correct Gif: </h4>
+                        <canvas id="correct-canvas" width="100" height="100"></canvas>
+                        <br>
+                      </div>
+                      <span id="playback-speed">Playback Speed: 1</span><input class="custom-range" type="range" id="canvas-speed" value="1" min="0" max="3" step="0.01">
+                    </div>
+                  </div>
+                  <div class="tab-pane fade" id="output" role="tabpanel" aria-labelledby="output-tab">
+                    <div id="console-output"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modals are the windows that appear over the main page. -->
+
+<div class="modal fade" id="overwrite-modal" tabindex="-1" role="dialog" aria-labelledby="modal-title" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modal-title">Exercise Loaded</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        This exercise provides starting code.  Do you want to overwrite your current code?
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-primary" data-dismiss="modal">No</button>
+        <button type="button" class="btn btn-secondary" data-dismiss="modal" onclick="overwriteCode()">Yes</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="readme-modal" tabindex="-1" role="dialog" aria-labelledby="modal-title" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modal-title">Welcome to Giffer Reborn!</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        This window will outline the features of Giffer Reborn. <br>
+        <strong>To see this window again, click "Show Help" under "Tools".</strong><br>
+        <br><br>
+        <h4>Working with exercises</h4>
+        To load an exercise, type the exercise number into the exercise field and press load.<br>
+        Some exercises provide some starting code! Be sure to load the exercise before you start working.<br>
+        If you want to edit the board, or experiment, you should "Clear Exercise".<br>
+        <br><br>
+        <h4>Debugging</h4>
+        Under the "Debugging" tab, there is a checkbox to "Enable Breakpoints".<br>
+        If you click next to a line number on the left of your code, you can add a breakpoint.<br>
+        When breakpoints are enabled, the program will halt execution when it reaches the breakpoint.<br>
+        Once the program has halted, you can view the current variables and their values.<br>
+        You can press "Step" to step to the next line of execution, this might take you into a function.<br>
+        You can press "Continue" to skip to the next breakpoint.<br>
+        At any time during debugging, you can disable breakpoints to finish executing.<br>
+        <br><br>
+        <h4>Submitting</h4>
+        Once you've solved an exercise, you can click "Copy Page".<br>
+        Then, read the directions in the console for how to submit to NEO.<br>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+        <button type="button" class="btn btn-primary" data-dismiss="modal" onclick="setToStorage('prevent-readme', true)">Don't Show Again</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="gen-modal" tabindex="-1" role="dialog" aria-labelledby="modal-title" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modal-title">Generate Exercise</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="row">
+          <div class="col-sm-6">
+            <div class="input-group mb-3 has-warning has-feedback">
+              <div class="input-group-prepend">
+                <span class="input-group-text"><strong>Exercise</strong></span>
+              </div>
+              <input type="number" required min="1" class="form-control" aria-label="Exercise number" id="genex-number"/>
+               <div class="input-group-append">
+                <button id="fetchButton" type="button" class="btn btn-warning" onclick="fetchExercise(true)">Fetch</button>
+              </div>
+            </div>
+            <div class="input-group mb-3">
+              <div class="input-group-prepend">
+                <span class="input-group-text"><strong>Board Type</strong></span>
+              </div>
+              <select class="form-control" id="genex-board">
+              </select>
+            </div>
+            <div id="genex-edit">
+              <table class="table" id="keyframe-table">
+                <thead>
+                  <tr>
+                    <th>At time (ms)</th>
+                    <th>Change pin</th>
+                    <th>To value</th>
+                    <th>Remove</th>
+                  </tr>
+                </thead>
+                <tbody id="keyframe-table-tbody"></tbody>
+              </table>
+            </div>
+
+            <div class="form-group">
+              <p></p>
+              <label for="genex-directions">Exercise Directions</label>
+              <textarea class="form-control" id="genex-directions" rows="8">
+              Directions go here!
+              </textarea>
+            </div>
+          </div>
+          <div class="col-sm-6">
+            <div class="form-group">
+              <label for="genex-starting">Starting code</label>
+              <textarea class="form-control" id="genex-starting"  rows="8">
+                Starting code for students goes here.
+              </textarea>
+            </div>
+            <div class="form-group">
+              <label for="genex-suffix">Complete code</label>
+              <textarea class="form-control" id="genex-complete" rows="8">
+                And here should be a preview of the complete code for the exercise.
+              </textarea>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+        <button id= "genexButton" type="button" class="btn btn-primary" onclick="generateExercise()" disabled>Create Exercise</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="exercise-modal" tabindex="-1" role="dialog" aria-labelledby="modal-title" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modal-title">Export Exercise</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="export-exercise-number">Exercise Number</label>
+          <input type="number" class="form-control" min="1" id="export-exercise-number">
+        </div>
+
+        <p>
+          <strong>Board Type</strong> currently selected board
+        </p>
+        <p>
+          <strong>Board Configuration</strong> current configuration (keyframes, etc)
+        </p>
+        <p>
+          <strong>Correct FrameManager</strong> current FrameManager (as shown by gif)
+        </p>
+
+        <div class="form-group">
+          <label for="export-exercise-directions">Exercise Directions</label>
+          <textarea class="form-control" id="export-exercise-directions">
+Directions go here
+</textarea>
+        </div>
+        <div class="form-group">
+          <label for="export-exercise-starting">Student starting code</label>
+          <textarea class="form-control" id="export-exercise-starting">
+void setup() {
+  pinMode(3, OUTPUT);
+}
+
+void loop() {
+  digitalWrite(3, HIGH);
+  delay(500);
+  digitalWrite(3, LOW);
+  delay(500);
+}
+</textarea>
+        </div>
+
+        <div class="form-group">
+          <label for="export-exercise-suffix">Student code suffix</label>
+          <textarea class="form-control" id="export-exercise-suffix">
+int main() {
+  setup();
+  loop();
+  return 0;
+}
+</textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+        <button type="button" class="btn btn-primary" onclick="updateSuffix()">Set Code Suffix</button>
+        <button type="button" class="btn btn-primary" onclick="exportExercise()">Export Exercise</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="confirmation-gif-container" style="display: none;"></div>
+
+<div id="highlight-storage" style="display: none; width: 0.01px; height: 0.01px;"></div>
+
+<script src="js/jquery-2.2.1.min.js" type="text/javascript" charset="utf-8"></script>
+<script src="js/bootstrap.bundle.min.js" type="text/javascript" charset="utf-8"></script>
+<script src="js/ace/ace.js" type="text/javascript" charset="utf-8"></script>
+<script src="js/FrameManager.js" type="text/javascript" charset="utf-8"></script>
+<script src="js/gif/gif.js" type="text/javascript" charset="utf-8"></script>
+<script src="js/FileSaver.min.js" type="text/javascript" charset="utf-8"></script>
+<script src="js/clipboard.min.js" type="text/javascript" charset="utf-8"></script>
+<script src="js/highlight.pack.js" type="text/javascript" charset="utf-8"></script>
+<script src="js/Debugger.js" type="text/javascript" charset="utf-8"></script>
+<script src="js/Board.js" type="text/javascript" charset="utf-8"></script>
+<script src="js/main.js" type="text/javascript" charset="utf-8"></script>
+
+</body>
+</html>
+
